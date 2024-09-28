@@ -384,5 +384,35 @@ async def process_update_info(message: Message):
         except Exception as e:
             await message.answer(f"Xatolik yuz berdi: {e}")
 
+@dp.message(Command('view_users'))
+async def view_users(message: Message):
+    if message.from_user.id != int(ADMIN_CHAT_ID):
+        await message.answer("Sizda bu buyruqni bajarish huquqi yo'q.")
+        return
+
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT chat_id, name, phone FROM users")
+        users = cursor.fetchall()
+        conn.close()
+
+        if not users:
+            await message.answer("Foydalanuvchilar topilmadi.")
+            return
+
+        users_list = []
+        for user in users:
+            chat = await bot.get_chat(user[0])  # Awaiting the result here
+            username = chat.username or 'Noma’lum'  # Handling missing username
+            users_list.append(f"Username: @{username}, Ism: {user[1]}, Telefon: {user[2]}")
+
+        await message.answer(f"Ro'yxatdan o'tgan barcha foydalanuvchilar:\n\n" + "\n\n".join(users_list))
+
+    except Exception as e:
+        print(f"Xatolik: {e}")
+        await message.answer("Foydalanuvchilarni ko'rsatishda xatolik yuz berdi.")
+
+
 if __name__ == "__main__":
     dp.run_polling(bot, skip_updates=True)
